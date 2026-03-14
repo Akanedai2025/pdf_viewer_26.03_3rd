@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF資料一覧</title>
+
+  <!-- pdf.js ライブラリ読み込み -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .pdf-container {
+      margin-bottom: 40px;
+    }
+    .pdf-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    canvas {
+      display: block;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>PDF資料一覧</h1>
+  <div id="pdf-list"></div>
+
+  <script>
+    const pdfs = [
+      { name: "あかね台自治会_これからの在り方について.pdf", path: "pdf/あかね台自治会_これからの在り方について.pdf" },
+    ];
+
+    const pdfListDiv = document.getElementById('pdf-list');
+
+    async function renderPDF(name, url) {
+      const container = document.createElement('div');
+      container.className = 'pdf-container';
+
+      const title = document.createElement('div');
+      title.className = 'pdf-title';
+      title.textContent = name;
+      container.appendChild(title);
+
+      try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const viewport = page.getViewport({ scale: 1.2 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          container.appendChild(canvas);
+          const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+          };
+          await page.render(renderContext).promise;
+        }
+      } catch (error) {
+        container.appendChild(document.createTextNode('PDFの読み込みに失敗しました。'));
+        console.error('Error loading PDF:', error);
+      }
+
+      pdfListDiv.appendChild(container);
+    }
+
+    // PDFを順にレンダリング
+    (async () => {
+      for(const pdf of pdfs) {
+        await renderPDF(pdf.name, pdf.path);
+      }
+    })();
+  </script>
+
+</body>
+</html>
